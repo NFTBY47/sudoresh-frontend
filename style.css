@@ -171,14 +171,31 @@ button:disabled {
     box-shadow: 0 5px 8px rgba(112, 161, 255, 0.4);
 }
 
+.clear-btn {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+}
+
+.clear-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 8px rgba(255, 107, 107, 0.4);
+}
+
 /* Виртуальная клавиатура */
 .virtual-keyboard {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 8px;
     width: 100%;
     max-width: 300px;
     margin-top: 5px;
+}
+
+.keyboard-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    width: 100%;
 }
 
 .number-btn {
@@ -195,6 +212,10 @@ button:disabled {
     flex: none;
     max-width: none;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .number-btn:hover {
@@ -210,9 +231,6 @@ button:disabled {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     color: white;
     font-size: 1.3rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .falling-numbers {
@@ -358,6 +376,10 @@ button:disabled {
     
     .virtual-keyboard {
         max-width: 280px;
+        gap: 6px;
+    }
+    
+    .keyboard-row {
         gap: 6px;
     }
     
