@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const grid = document.getElementById('sudokuGrid');
     const solveBtn = document.getElementById('solveBtn');
-    const clearBtn = document.getElementById('clearBtn');
     const fallingNumbers = document.getElementById('fallingNumbers');
     const modal = document.getElementById('modal');
     const closeModal = document.getElementById('closeModal');
@@ -84,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     e.preventDefault();
                     cell.value = e.key;
                     cell.classList.add('user-input');
+                    moveToNextCell();
                 }
             });
             
@@ -149,14 +149,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Очистка клетки
                     activeCell.value = '';
                     activeCell.classList.remove('user-input');
+                    // При очистке не переходим к следующей клетке
                 } else {
                     // Ввод цифры
                     activeCell.value = number;
                     activeCell.classList.add('user-input');
-                }
-                
-                // Переходим к следующей клетке автоматически (кроме очистки)
-                if (number !== '0') {
+                    // Переходим к следующей клетке автоматически
                     moveToNextCell();
                 }
             }
@@ -266,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Очистка сетки
+    // Очистка всей сетки
     function clearGrid() {
         for (let i = 0; i < 81; i++) {
             const cell = grid.children[i];
@@ -274,6 +272,12 @@ document.addEventListener('DOMContentLoaded', function() {
             cell.classList.remove('user-input', 'solved', 'active');
         }
         activeCell = null;
+        // Выбираем первую клетку после очистки
+        setTimeout(() => {
+            if (grid.children[0]) {
+                setActiveCell(grid.children[0]);
+            }
+        }, 100);
     }
 
     // Падающие цифры
@@ -314,7 +318,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обработчики событий
     solveBtn.addEventListener('click', solveSudoku);
-    clearBtn.addEventListener('click', clearGrid);
 
     // Инициализация
     createGrid();
