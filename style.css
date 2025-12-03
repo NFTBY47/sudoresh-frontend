@@ -4,9 +4,7 @@
     --text-color: #ffffff;
     --text-secondary: #aaaaaa;
     --accent-color: #70a1ff;
-    --accent-hover: #8eb3ff;
     --danger-color: #ff6b6b;
-    --danger-hover: #ff8585;
     --border-color: #333333;
     --cell-bg: #ffffff;
     --cell-text: #000000;
@@ -18,10 +16,10 @@
     --button-gradient: linear-gradient(135deg, #70a1ff 0%, #5352ed 100%);
     --clear-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
     --title-color: #ffffff;
-    --solved-color: #000000;
-    --conflict-color: #ff0000;
-    --conflict-bg: #ff000020;
-    --conflict-border: #ff0000;
+    --solved-color: #4a90e2;
+    --conflict-color: #ff4444;
+    --conflict-bg: rgba(255, 68, 68, 0.1);
+    --conflict-border: #ff4444;
 }
 
 [data-theme="light"] {
@@ -30,9 +28,7 @@
     --text-color: #1a1a1a;
     --text-secondary: #666666;
     --accent-color: #4a6fff;
-    --accent-hover: #5d7eff;
     --danger-color: #ff4757;
-    --danger-hover: #ff5e6c;
     --border-color: #dddddd;
     --cell-bg: #ffffff;
     --cell-text: #000000;
@@ -44,9 +40,9 @@
     --button-gradient: linear-gradient(135deg, #4a6fff 0%, #3a5fdf 100%);
     --clear-gradient: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
     --title-color: #000000;
-    --solved-color: #000000;
-    --conflict-bg: #ff000015;
-    --conflict-border: #ff0000;
+    --solved-color: #2e7d32;
+    --conflict-bg: rgba(255, 68, 68, 0.15);
+    --conflict-border: #ff4444;
 }
 
 * {
@@ -58,77 +54,102 @@
 
 html, body {
     height: 100%;
-    overflow: auto;
+    width: 100%;
+    overflow: hidden;
     background-color: var(--bg-color);
     color: var(--text-color);
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
-    min-height: 100vh;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    justify-content: flex-start;
-    padding: clamp(4px, 1vh, 8px) 4px;
+    padding: 0;
+    margin: 0;
 }
 
-/* ==================== КНОПКА ТЕМЫ — НАСТОЯЩИЕ ЭМОДЗИ ==================== */
+/* Кнопка темы */
 .theme-toggle {
     position: fixed;
     top: 12px;
     right: 12px;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     background: var(--theme-toggle-bg);
     border-radius: 10px;
     border: 2px solid var(--theme-toggle-border);
     cursor: pointer;
-    box-shadow: 0 2px 8px var(--shadow-color);
+    box-shadow: 0 4px 12px var(--shadow-color);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 21px;
+    font-size: 20px;
     z-index: 1000;
-    user-select: none;
+    transition: transform 0.2s ease;
 }
-.theme-toggle::before { content: 'Moon'; }
-[data-theme="light"] .theme-toggle::before { content: 'Sun'; }
-/* ===================================================================== */
 
+.theme-toggle:hover {
+    transform: scale(1.05);
+}
+
+/* Контейнер */
 .container {
     width: 100%;
     max-width: 500px;
-    text-align: center;
+    height: 100vh;
+    max-height: 900px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: clamp(6px, 1.5vh, 10px);
-    flex-grow: 1;
-    padding: 0 4px;
-    margin: 0 auto;
+    justify-content: center;
+    padding: 60px 16px 30px;
+    gap: 16px;
+    overflow: hidden;
 }
 
+/* Заголовок */
 .header {
-    margin-bottom: 4px;
-    padding-top: 36px;
-    width: 100%;
+    text-align: center;
+    flex-shrink: 0;
 }
 
-.title { font-size: clamp(1.6rem, 6vw, 2.2rem); font-weight: 800; color: var(--title-color); letter-spacing: -1px; }
-.subtitle { font-size: clamp(0.7rem, 2vw, 0.85rem); color: var(--text-secondary); margin-top: 4px; }
+.title {
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    font-weight: 800;
+    color: var(--title-color);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+}
 
+.subtitle {
+    font-size: clamp(0.8rem, 2vw, 0.9rem);
+    color: var(--text-secondary);
+}
+
+/* Область игры */
+.game-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+    justify-content: center;
+}
+
+/* Платформа судоку */
 .sudoku-platform {
     background: var(--card-bg);
-    border-radius: 14px;
-    padding: clamp(8px, 2.5vw, 12px);
-    box-shadow: 0 8px 25px var(--shadow-color);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 6px 20px var(--shadow-color);
     border: 1px solid var(--border-color);
-    width: fit-content;
-    max-width: 95vw;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 400px;
 }
 
+/* Сетка судоку */
 .sudoku-grid {
     display: grid;
     grid-template-columns: repeat(9, 1fr);
@@ -136,9 +157,9 @@ body {
     border: 2px solid var(--border-color);
     background-color: var(--border-color);
     border-radius: 8px;
-    width: clamp(260px, 88vw, 420px);
-    height: clamp(260px, 88vw, 420px);
+    width: 100%;
     aspect-ratio: 1;
+    max-height: 380px;
 }
 
 .sudoku-cell {
@@ -147,7 +168,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: clamp(1rem, 3.8vw, 1.6rem);
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
     font-weight: 600;
     border: 1px solid var(--border-color);
     user-select: none;
@@ -157,13 +178,8 @@ body {
 
 .sudoku-cell.active {
     background-color: var(--cell-active-bg);
-    box-shadow: inset 0 0 0 3px var(--accent-color);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { box-shadow: inset 0 0 0 3px var(--accent-color); }
-    50% { box-shadow: inset 0 0 0 3px var(--accent-color), 0 0 12px rgba(112, 161, 255, 0.5); }
+    box-shadow: inset 0 0 0 2px var(--accent-color);
+    z-index: 1;
 }
 
 .sudoku-cell.conflict {
@@ -172,15 +188,29 @@ body {
     color: var(--conflict-color) !important;
 }
 
-.sudoku-cell:nth-child(3n):not(:nth-child(9n)) { border-right: 2px solid var(--border-color); }
+/* Густые границы для 3x3 блоков */
+.sudoku-cell:nth-child(3n):not(:nth-child(9n)) {
+    border-right: 2px solid var(--border-color);
+}
+
 .sudoku-cell:nth-child(n+19):nth-child(-n+27),
-.sudoku-cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--border-color); }
+.sudoku-cell:nth-child(n+46):nth-child(-n+54) {
+    border-bottom: 2px solid var(--border-color);
+}
 
-.sudoku-cell.user-input { color: var(--accent-color); font-weight: 800; }
-.sudoku-cell.solved { color: var(--solved-color); font-weight: 800; animation: fadeInScale 0.4s ease-out; }
+.sudoku-cell.user-input {
+    color: var(--accent-color);
+    font-weight: 700;
+}
 
-@keyframes fadeInScale {
-    from { opacity: 0; transform: scale(0.6); }
+.sudoku-cell.solved {
+    color: var(--solved-color);
+    font-weight: 700;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
 }
 
@@ -192,49 +222,49 @@ body {
     text-align: center;
     font: inherit;
     color: inherit;
+    font-weight: inherit;
     cursor: pointer;
     outline: none;
     padding: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
-/* ==================== КРУПНАЯ КРАСИВАЯ КЛАВИАТУРА (ТОЛЬКО ЭТО И ИЗМЕНИЛ) ==================== */
+/* Виртуальная клавиатура - СКРЫТА ПО УМОЛЧАНИЮ */
 .virtual-keyboard {
-    display: flex;
+    display: none;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
-    max-width: clamp(260px, 88vw, 420px);
-    margin: 16px auto 8px auto;
-    padding: 0 10px;
+    max-width: 400px;
+    padding: 0 8px;
+    flex-shrink: 0;
     opacity: 0;
     transform: translateY(10px);
     transition: opacity 0.3s ease, transform 0.3s ease;
-    pointer-events: none;
 }
 
 .virtual-keyboard.show {
+    display: flex;
     opacity: 1;
     transform: translateY(0);
-    pointer-events: auto;
 }
 
 .keyboard-row {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 11px;
+    gap: 10px;
     width: 100%;
-    justify-items: center;
 }
 
 .number-btn,
 .clear-cell-btn {
-    width: clamp(52px, 14.5vw, 68px) !important;
-    height: clamp(52px, 14.5vw, 68px) !important;
-    min-width: 52px;
-    min-height: 52px;
-    border-radius: 18px;
-    font-size: clamp(1.5rem, 5.2vw, 2rem);
-    font-weight: 800;
+    width: 100%;
+    height: 50px;
+    border-radius: 12px;
+    font-size: 1.3rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -242,107 +272,373 @@ body {
     border: none;
     cursor: pointer;
     transition: all 0.15s ease;
-    box-shadow: 0 7px 18px rgba(0,0,0,0.45);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     -webkit-tap-highlight-color: transparent;
 }
 
-.number-btn { background: var(--button-gradient); color: white; }
-.clear-cell-btn { background: var(--clear-gradient); color: white; font-size: 2.4rem; }
+.number-btn {
+    background: var(--button-gradient);
+    color: white;
+}
+
+.clear-cell-btn {
+    background: var(--clear-gradient);
+    color: white;
+    font-size: 1.6rem;
+}
 
 .number-btn:active,
 .clear-cell-btn:active {
-    transform: scale(0.91);
+    transform: scale(0.92);
 }
-/* ===================================================================== */
 
-/* КНОПКИ РЕШИТЬ / ОЧИСТИТЬ — ОСТАЛИСЬ КАК БЫЛИ */
+/* Контролы */
 .controls {
     width: 100%;
-    max-width: clamp(260px, 88vw, 420px);
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    max-width: 400px;
+    flex-shrink: 0;
 }
 
 .buttons-row {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     justify-content: center;
 }
 
-.solve-btn, .clear-btn {
+.solve-btn,
+.clear-btn {
     flex: 1;
-    padding: clamp(9px, 2.5vw, 12px) 0;
-    font-size: clamp(0.9rem, 3vw, 1rem);
+    padding: 14px 0;
+    font-size: 1rem;
     font-weight: 700;
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    min-height: 44px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     transition: all 0.2s ease;
     color: white;
+    min-height: 50px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-.solve-btn { background: var(--button-gradient); }
-.clear-btn { background: var(--clear-gradient); }
+.solve-btn {
+    background: var(--button-gradient);
+}
 
+.clear-btn {
+    background: var(--clear-gradient);
+}
+
+.solve-btn:hover,
+.clear-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+.solve-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Подпись */
 .signature {
-    margin-top: 8px;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
     opacity: 0.8;
+    text-align: center;
+    margin-top: 8px;
+    flex-shrink: 0;
 }
 
-/* Адаптивность */
-@media (max-width: 480px) {
-    .theme-toggle { top: 8px; right: 8px; width: 32px; height: 32px; font-size: 19px; }
-}
-
-@media (max-height: 600px) {
-    .number-btn, .clear-cell-btn { width: 48px !important; height: 48px !important; }
-}
-
-/* Модалка */
+/* Модальное окно */
 .modal {
-    display: none;
     position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.8);
-    z-index: 1000;
-    backdrop-filter: blur(5px);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    display: none;
     align-items: center;
     justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(4px);
+}
+
+.modal.show {
+    display: flex;
 }
 
 .modal-content {
     background: var(--modal-bg);
     border-radius: 16px;
-    width: 90%;
-    max-width: 340px;
+    width: 100%;
+    max-width: 320px;
     overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    border: 1px solid var(--border-color);
 }
 
 .modal-header {
     background: var(--button-gradient);
-    padding: 16px;
+    padding: 18px;
     text-align: center;
     color: white;
     font-weight: 700;
     font-size: 1.1rem;
 }
 
-.modal-body { padding: 20px; text-align: center; font-size: 0.95rem; }
+.modal-body {
+    padding: 20px 18px;
+    text-align: center;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
 
 .ok-btn {
     width: 100%;
-    padding: 12px;
-    background: white;
-    color: #444;
+    padding: 14px;
+    background: var(--accent-color);
+    color: white;
     border: none;
     font-weight: 700;
     cursor: pointer;
-    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: background-color 0.2s ease;
+}
+
+/* МЕДИА-ЗАПРОСЫ ДЛЯ КОМПАКТНОСТИ */
+
+/* Для телефонов (до 600px) */
+@media (max-width: 600px) {
+    .container {
+        max-height: 700px;
+        padding: 50px 12px 20px;
+        gap: 12px;
+    }
+    
+    .sudoku-platform {
+        max-width: 340px;
+        padding: 10px;
+    }
+    
+    .sudoku-grid {
+        max-height: 320px;
+    }
+    
+    .sudoku-cell {
+        font-size: 1.1rem;
+    }
+    
+    .controls {
+        max-width: 340px;
+    }
+}
+
+/* Для очень маленьких телефонов (до 400px) */
+@media (max-width: 400px) {
+    .container {
+        padding: 45px 10px 15px;
+        gap: 10px;
+    }
+    
+    .title {
+        font-size: 1.6rem;
+    }
+    
+    .subtitle {
+        font-size: 0.75rem;
+    }
+    
+    .sudoku-platform {
+        max-width: 300px;
+        padding: 8px;
+    }
+    
+    .sudoku-grid {
+        max-height: 280px;
+    }
+    
+    .sudoku-cell {
+        font-size: 1rem;
+    }
+    
+    .controls {
+        max-width: 300px;
+    }
+    
+    .solve-btn,
+    .clear-btn {
+        padding: 12px 0;
+        font-size: 0.9rem;
+        min-height: 45px;
+    }
+    
+    .number-btn,
+    .clear-cell-btn {
+        height: 45px;
+        font-size: 1.2rem;
+    }
+}
+
+/* ДЛЯ ПК ВЕРСИИ - клавиатура скрыта */
+@media (min-width: 768px) {
+    .container {
+        max-width: 600px;
+        max-height: 850px;
+        padding: 70px 20px 40px;
+        gap: 20px;
+    }
+    
+    .title {
+        font-size: 2.8rem;
+    }
+    
+    .subtitle {
+        font-size: 1.1rem;
+    }
+    
+    .sudoku-platform {
+        max-width: 450px;
+        padding: 16px;
+        border-radius: 16px;
+    }
+    
+    .sudoku-grid {
+        max-height: 400px;
+        border-width: 3px;
+        border-radius: 10px;
+    }
+    
+    .sudoku-cell {
+        font-size: 1.6rem;
+    }
+    
+    .sudoku-cell:nth-child(3n):not(:nth-child(9n)) {
+        border-right-width: 3px;
+    }
+    
+    .sudoku-cell:nth-child(n+19):nth-child(-n+27),
+    .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
+        border-bottom-width: 3px;
+    }
+    
+    /* ВИРТУАЛЬНАЯ КЛАВИАТУРА СКРЫТА НА ПК */
+    .virtual-keyboard {
+        display: none !important;
+    }
+    
+    .controls {
+        max-width: 450px;
+    }
+    
+    .solve-btn,
+    .clear-btn {
+        padding: 16px 0;
+        font-size: 1.1rem;
+        min-height: 55px;
+        border-radius: 14px;
+    }
+    
+    .signature {
+        font-size: 0.85rem;
+    }
+}
+
+/* Когда экран УЗКИЙ (мобилки и планшеты в портрете) */
+@media (max-width: 767px) {
+    /* Показываем виртуальную клавиатуру только при сильном сужении */
+    .virtual-keyboard {
+        display: flex;
+    }
+    
+    /* Делаем инпуты readOnly чтобы не показывалась родная клавиатура */
+    .cell-input {
+        caret-color: transparent;
+    }
+}
+
+/* Когда экран ОЧЕНЬ узкий (сильное сужение) */
+@media (max-width: 480px) {
+    .virtual-keyboard.show {
+        display: flex;
+    }
+}
+
+/* Горизонтальная ориентация на мобилках */
+@media (max-height: 500px) and (orientation: landscape) {
+    .container {
+        flex-direction: row;
+        max-width: 100vw;
+        max-height: 100vh;
+        padding: 20px;
+        gap: 10px;
+    }
+    
+    .header {
+        width: 150px;
+        text-align: left;
+        align-self: flex-start;
+        margin-top: 40px;
+    }
+    
+    .title {
+        font-size: 1.8rem;
+    }
+    
+    .subtitle {
+        font-size: 0.8rem;
+    }
+    
+    .game-area {
+        flex: 1;
+        max-width: 400px;
+        gap: 10px;
+    }
+    
+    .sudoku-platform {
+        max-width: 350px;
+    }
+    
+    .sudoku-grid {
+        max-height: 300px;
+    }
+    
+    .virtual-keyboard {
+        display: flex;
+        max-width: 350px;
+    }
+    
+    .controls {
+        width: 150px;
+        max-width: 150px;
+        align-self: flex-start;
+        margin-top: 40px;
+    }
+    
+    .buttons-row {
+        flex-direction: column;
+    }
+    
+    .signature {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        margin: 0;
+        font-size: 0.7rem;
+    }
+}
+
+/* Для предотвращения скролла */
+* {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+html, body {
+    touch-action: manipulation;
+    overscroll-behavior: none;
 }
