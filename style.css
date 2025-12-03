@@ -485,47 +485,6 @@ button:disabled {
     background: linear-gradient(135deg, var(--danger-hover) 0%, #f55353 100%);
 }
 
-/* Падающие цифры */
-.falling-numbers {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1;
-    overflow: hidden;
-}
-
-.falling-number {
-    position: absolute;
-    color: var(--accent-color);
-    font-size: 16px;
-    font-weight: bold;
-    animation: fall linear infinite;
-    user-select: none;
-    opacity: 0;
-    text-shadow: 0 0 10px currentColor;
-    filter: blur(0.5px);
-}
-
-@keyframes fall {
-    0% {
-        transform: translateY(-50px) rotate(0deg) scale(0.8);
-        opacity: 0;
-    }
-    10% {
-        opacity: 0.2;
-    }
-    90% {
-        opacity: 0.2;
-    }
-    100% {
-        transform: translateY(100vh) rotate(360deg) scale(1);
-        opacity: 0;
-    }
-}
-
 /* Подпись */
 .signature {
     margin-top: 10px;
