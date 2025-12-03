@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentTheme = localStorage.getItem('theme') || 'dark';
     let isClearing = false;
     let conflictCheckTimeout = null;
-    let currentConflicts = new Map();
+    let currentConflicts = new Map(); // ВОЗВРАЩАЕМ Map для контроля ошибок
     let useServer = true;
     let keyboardVisible = false;
 
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         // Показываем клавиатуру на мобильных и узких экранах
-        return isMobile || width <= 1100;
+        return isMobile || width <= 1100 || height <= 700;
     }
 
     // Показываем/скрываем клавиатуру
@@ -287,6 +287,308 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // ============ ЛОГИКА КОНТРОЛЯ ОШИБОК (ВОЗВРАЩАЕМ) ============
+
+    // Проверка конфликтов для конкретной клетки
+    function checkCellConflictsClient(cellIndex, board = null) {
+        if (!board) {
+            board = getBoard();
+        }
+        
+        const currentValue = board[cellIndex];
+        if (currentValue === 0) return [];
+        
+        const row = Math.floor(cellIndex / 9);
+        const col = cellIndex % 9;
+        const conflicts = [];
+        
+        // Проверка строки
+        for (let c = 0; c < 9; c++) {
+            const index = row * 9 + c;
+            if (index !== cellIndex && board[index] === currentValue) {
+                conflicts.push(index);
+            }
+        }
+        
+        // Проверка столбца
+        for (let r = 0; r < 9; r++) {
+            const index = r * 9 + col;
+            if (index !== cellIndex && board[index] === currentValue) {
+                conflicts.push(index);
+            }
+        }
+        
+        // Проверка блока 3x3
+        const startRow = Math.floor(row / 3) * 3;
+        const startCol = Math.floor(col / 3) * 3;
+        
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                const index = (startRow + r) * 9 + (startCol + c);
+                if (index !== cellIndex && board[index] === currentValue) {
+                    conflicts.push(index);
+                }
+            }
+        }
+        
+        return conflicts;
+    }
+
+    // Обновить конфликты для конкретной клетки и ВСЕХ связанных
+    function updateCellAndRelatedConflicts(cellIndex) {
+        const board = getBoard();
+        
+        // Собираем ВСЕ клетки, которые нужно перепроверить
+        const cellsToCheck = new Set();
+        cellsToCheck.add(cellIndex);
+        
+        const row = Math.floor(cellIndex / 9);
+        const col = cellIndex % 9;
+        
+        // Добавляем всю строку
+        for (let c = 0; c < 9; c++) {
+            const index = row * 9 + c;
+            if (index !== cellIndex && board[index] !== 0) {
+                cellsToCheck.add(index);
+            }
+        }
+        
+        // Добавляем весь столбец
+        for (let r = 0; r < 9; r++) {
+            const index = r * 9 + col;
+            if (index !== cellIndex && board[index] !== 0) {
+                cellsToCheck.add(index);
+            }
+        }
+        
+        // Добавляем весь блок 3x3
+        const startRow = Math.floor(row / 3) * 3;
+        const startCol = Math.floor(col / 3) * 3;
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                const index = (startRow + r) * 9 + (startCol + c);
+                if (index !== cellIndex && board[index] !== 0) {
+                    cellsToCheck.add(index);
+                }
+            }
+        }
+        
+        // Удаляем старые конфликты для этих клеток
+        for (const index of cellsToCheck) {
+            removeCellFromConflicts(index);
+        }
+        
+        // Проверяем каждую клетку на новые конфликты
+        for (const index of cellsToCheck) {
+            if (board[index] !== 0) {
+                const conflicts = checkCellConflictsClient(index, board);
+                if (conflicts.length > 0) {
+                    // Сохраняем конфликты
+                    if (currentConflicts.has(index)) {
+                        const existingConflicts = currentConflicts.get(index);
+                        conflicts.forEach(conflictIndex => {
+                            if (!existingConflicts.includes(conflictIndex)) {
+                                existingConflicts.push(conflictIndex);
+                            }
+                        });
+                    } else {
+                        currentConflicts.set(index, conflicts);
+                    }
+                    
+                    // Подсвечиваем конфликтующую клетку
+                    const cell = grid.children[index];
+                    if (cell) {
+                        cell.classList.add('conflict');
+                    }
+                    
+                    // Добавляем обратные связи
+                    for (const conflictIndex of conflicts) {
+                        if (currentConflicts.has(conflictIndex)) {
+                            const existingConflicts = currentConflicts.get(conflictIndex);
+                            if (!existingConflicts.includes(index)) {
+                                existingConflicts.push(index);
+                            }
+                        } else {
+                            currentConflicts.set(conflictIndex, [index]);
+                        }
+                        
+                        // Подсвечиваем конфликтующую клетку
+                        const conflictCell = grid.children[conflictIndex];
+                        if (conflictCell) {
+                            conflictCell.classList.add('conflict');
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Очищаем пустые записи в currentConflicts
+        cleanupConflicts();
+    }
+
+    // Удалить клетку из всех конфликтов
+    function removeCellFromConflicts(cellIndex) {
+        // Удаляем эту клетку как источник конфликтов
+        if (currentConflicts.has(cellIndex)) {
+            currentConflicts.delete(cellIndex);
+        }
+        
+        // Удаляем эту клетку из списков конфликтов других клеток
+        for (const [index, conflicts] of currentConflicts) {
+            const conflictIndex = conflicts.indexOf(cellIndex);
+            if (conflictIndex !== -1) {
+                conflicts.splice(conflictIndex, 1);
+            }
+        }
+        
+        // Убираем подсветку с этой клетки
+        const cell = grid.children[cellIndex];
+        if (cell) {
+            cell.classList.remove('conflict');
+        }
+    }
+
+    // Очистить пустые записи о конфликтах
+    function cleanupConflicts() {
+        // Удаляем записи с пустыми массивами конфликтов
+        for (const [index, conflicts] of currentConflicts) {
+            if (conflicts.length === 0) {
+                currentConflicts.delete(index);
+            }
+        }
+        
+        // Убираем подсветку с клеток, которые больше не в конфликтах
+        for (let i = 0; i < 81; i++) {
+            if (!currentConflicts.has(i)) {
+                let hasConflict = false;
+                
+                // Проверяем, есть ли эта клетка в конфликтах других
+                for (const [, conflicts] of currentConflicts) {
+                    if (conflicts.includes(i)) {
+                        hasConflict = true;
+                        break;
+                    }
+                }
+                
+                if (!hasConflict) {
+                    const cell = grid.children[i];
+                    if (cell) {
+                        cell.classList.remove('conflict');
+                    }
+                }
+            }
+        }
+    }
+
+    // ============ СЕРВЕРНЫЕ АЛГОРИТМЫ ============
+
+    // Проверить конфликты на сервере
+    async function checkConflictsOnServer(board) {
+        if (!useServer) return null;
+        
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), SERVER_TIMEOUT);
+            
+            const response = await fetch(`${SERVER_URL}/check_conflicts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ board: board }),
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                const data = await response.json();
+                return data;
+            }
+        } catch (error) {
+            console.warn('Не удалось проверить конфликты на сервере');
+        }
+        
+        return null;
+    }
+
+    // Решить судоку на сервере
+    async function solveOnServer(board) {
+        if (!useServer) return null;
+        
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), SERVER_TIMEOUT);
+            
+            const response = await fetch(`${SERVER_URL}/solve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ board: board }),
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+                const data = await response.json();
+                return data;
+            }
+        } catch (error) {
+            console.warn('Не удалось решить на сервере');
+        }
+        
+        return null;
+    }
+
+    // ============ ОБЩИЕ ФУНКЦИИ ============
+
+    // Обновить конфликты (гибридная логика)
+    async function updateConflicts(cellIndex) {
+        const board = getBoard();
+        
+        if (useServer) {
+            // Пытаемся использовать сервер
+            const serverResult = await checkConflictsOnServer(board);
+            
+            if (serverResult && !serverResult.error) {
+                // Сервер ответил успешно
+                currentConflicts.clear();
+                
+                // Убираем все конфликты
+                document.querySelectorAll('.sudoku-cell').forEach(cell => {
+                    cell.classList.remove('conflict');
+                });
+                
+                // Применяем конфликты с сервера
+                if (serverResult.conflicts && serverResult.conflicts.length > 0) {
+                    serverResult.conflicts.forEach(conflictIndex => {
+                        const cell = grid.children[conflictIndex];
+                        if (cell) {
+                            cell.classList.add('conflict');
+                        }
+                    });
+                    
+                    // Сохраняем конфликты
+                    for (const conflictIndex of serverResult.conflicts) {
+                        const conflicts = checkCellConflictsClient(conflictIndex, board);
+                        if (conflicts.length > 0) {
+                            currentConflicts.set(conflictIndex, conflicts);
+                        }
+                    }
+                }
+                
+                return;
+            }
+        }
+        
+        // Если сервер недоступен или ошибка, используем клиентскую логику
+        updateCellAndRelatedConflicts(cellIndex);
+    }
+
     // Обработчик ввода
     function handleCellInput(input, e) {
         if (!/^[1-9]?$/.test(input.value)) {
@@ -320,9 +622,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const index = parseInt(cell.dataset.index);
         
         if (e.key === 'Backspace' || e.key === 'Delete') {
+            // Сохраняем старое значение для проверки
+            const oldValue = input.value;
+            
             setTimeout(async () => {
                 if (input.value === '') {
                     cell.classList.remove('user-input', 'solved');
+                    // Если было значение, обновляем конфликты
+                    if (oldValue !== '') {
+                        await updateConflicts(index);
+                    }
                 }
             }, 0);
         }
@@ -336,10 +645,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Ввод цифр (только на десктопах без клавиатуры)
         if (!keyboardVisible && /^[1-9]$/.test(e.key)) {
             e.preventDefault();
+            const oldValue = input.value;
             input.value = e.key;
             cell.classList.add('user-input');
             cell.classList.remove('solved');
             
+            // Если значение изменилось, обновляем конфликты
             setTimeout(async () => {
                 await updateConflicts(index);
             }, 50);
@@ -382,6 +693,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (newIndex >= 0 && newIndex < 81) {
             const newCell = grid.children[newIndex];
             handleCellClick(newCell);
+            
+            const input = newCell.querySelector('.cell-input');
+            if (window.innerWidth > 767) {
+                input.focus();
+            }
         }
     }
 
@@ -389,64 +705,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function getBoard() {
         const board = [];
         for (let i = 0; i < 81; i++) {
-            const input = grid.children[i].querySelector('.cell-input');
+            const cell = grid.children[i];
+            const input = cell.querySelector('.cell-input');
             board.push(input.value === '' ? 0 : parseInt(input.value));
         }
         return board;
-    }
-
-    // Проверка конфликтов
-    async function updateConflicts(cellIndex) {
-        const board = getBoard();
-        const value = board[cellIndex];
-        
-        if (value === 0) {
-            grid.children[cellIndex].classList.remove('conflict');
-            return;
-        }
-        
-        const row = Math.floor(cellIndex / 9);
-        const col = cellIndex % 9;
-        let hasConflict = false;
-        
-        // Проверка строки
-        for (let c = 0; c < 9; c++) {
-            const index = row * 9 + c;
-            if (index !== cellIndex && board[index] === value) {
-                hasConflict = true;
-                grid.children[index].classList.add('conflict');
-            }
-        }
-        
-        // Проверка столбца
-        for (let r = 0; r < 9; r++) {
-            const index = r * 9 + col;
-            if (index !== cellIndex && board[index] === value) {
-                hasConflict = true;
-                grid.children[index].classList.add('conflict');
-            }
-        }
-        
-        // Проверка блока 3x3
-        const startRow = Math.floor(row / 3) * 3;
-        const startCol = Math.floor(col / 3) * 3;
-        
-        for (let r = 0; r < 3; r++) {
-            for (let c = 0; c < 3; c++) {
-                const index = (startRow + r) * 9 + (startCol + c);
-                if (index !== cellIndex && board[index] === value) {
-                    hasConflict = true;
-                    grid.children[index].classList.add('conflict');
-                }
-            }
-        }
-        
-        // Подсвечиваем саму клетку если есть конфликт
-        if (hasConflict) {
-            grid.children[cellIndex].classList.add('conflict');
-        } else {
-            grid.children[cellIndex].classList.remove('conflict');
-        }
     }
 
     // ============ КЛИЕНТСКИЙ РЕШАТЕЛЬ ============
@@ -479,47 +742,47 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         }
 
-        solveSudoku(board) {
+        findEmpty(board) {
             for (let i = 0; i < 81; i++) {
                 if (board[i] === 0) {
-                    const row = Math.floor(i / 9);
-                    const col = i % 9;
-                    
-                    for (let num = 1; num <= 9; num++) {
-                        if (this.isValid(board, row, col, num)) {
-                            board[i] = num;
-                            if (this.solveSudoku(board)) return true;
-                            board[i] = 0;
-                        }
-                    }
-                    return false;
+                    return { row: Math.floor(i / 9), col: i % 9, index: i };
                 }
             }
-            return true;
+            return null;
+        }
+
+        solveSudoku(board) {
+            const empty = this.findEmpty(board);
+            if (!empty) return true;
+            
+            const { row, col, index } = empty;
+            
+            for (let num = 1; num <= 9; num++) {
+                if (this.isValid(board, row, col, num)) {
+                    board[index] = num;
+                    
+                    if (this.solveSudoku(board)) {
+                        return true;
+                    }
+                    
+                    board[index] = 0;
+                }
+            }
+            
+            return false;
         }
 
         solve() {
             const boardCopy = [...this.board];
             
             // Проверяем конфликты перед решением
-            for (let i = 0; i < 81; i++) {
-                if (boardCopy[i] !== 0) {
-                    const row = Math.floor(i / 9);
-                    const col = i % 9;
-                    const num = boardCopy[i];
-                    boardCopy[i] = 0;
-                    
-                    if (!this.isValid(boardCopy, row, col, num)) {
-                        boardCopy[i] = num;
-                        return { 
-                            solved: false, 
-                            board: null, 
-                            message: 'Некорректное судоку: есть конфликты' 
-                        };
-                    }
-                    
-                    boardCopy[i] = num;
-                }
+            const hasConflicts = this.hasConflicts(boardCopy);
+            if (hasConflicts) {
+                return { 
+                    solved: false, 
+                    board: null, 
+                    message: 'Некорректное судоку: есть конфликты' 
+                };
             }
             
             const isSolved = this.solveSudoku(boardCopy);
@@ -531,34 +794,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 server: 'javascript'
             };
         }
+
+        hasConflicts(board) {
+            for (let i = 0; i < 81; i++) {
+                if (board[i] !== 0) {
+                    const row = Math.floor(i / 9);
+                    const col = i % 9;
+                    const num = board[i];
+                    
+                    // Временно убираем число для проверки
+                    board[i] = 0;
+                    
+                    if (!this.isValid(board, row, col, num)) {
+                        board[i] = num;
+                        return true;
+                    }
+                    
+                    board[i] = num;
+                }
+            }
+            return false;
+        }
     }
 
     // Анимация решения
-    async function animateSolution(solutionBoard) {
+    async function animateSolution(solutionBoard, source = 'javascript') {
         const originalBoard = getBoard();
         
         // Очищаем все конфликты перед решением
         document.querySelectorAll('.sudoku-cell').forEach(cell => {
             cell.classList.remove('conflict');
         });
+        currentConflicts.clear();
         
         // Собираем клетки для решения
         const cellsToSolve = [];
         for (let i = 0; i < 81; i++) {
             if (originalBoard[i] === 0 && solutionBoard[i] !== 0) {
-                cellsToSolve.push(i);
+                const cell = grid.children[i];
+                const row = Math.floor(i / 9);
+                const col = i % 9;
+                const distance = Math.sqrt(Math.pow(row - 4, 2) + Math.pow(col - 4, 2));
+                cellsToSolve.push({ 
+                    cell: cell, 
+                    index: i,
+                    distance: distance
+                });
             }
         }
         
+        // Сортируем от центра к краям
+        cellsToSolve.sort((a, b) => a.distance - b.distance);
+        
         // Анимация решения
         for (let i = 0; i < cellsToSolve.length; i++) {
+            // Проверяем, не была ли прервана анимация
             if (!isSolving || isClearing) {
                 console.log('Анимация прервана');
                 return;
             }
             
-            const index = cellsToSolve[i];
-            const cell = grid.children[index];
+            const { cell, index } = cellsToSolve[i];
             const input = cell.querySelector('.cell-input');
             
             // Задержка для анимации
@@ -570,7 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cell.classList.remove('user-input', 'conflict');
         }
         
-        console.log('✅ Судоку решено');
+        console.log(`✅ Судоку решено (${source})`);
     }
 
     // ОСНОВНАЯ ФУНКЦИЯ РЕШЕНИЯ (ГИБРИДНАЯ)
@@ -578,7 +874,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isSolving) return;
         
         // Проверяем конфликты перед решением
-        const hasConflicts = document.querySelectorAll('.sudoku-cell.conflict').length > 0;
+        const hasConflicts = currentConflicts.size > 0;
         if (hasConflicts) {
             showModal('Исправьте конфликты перед решением!', 'Конфликты обнаружены');
             return;
@@ -596,36 +892,19 @@ document.addEventListener('DOMContentLoaded', function() {
         solveBtn.disabled = true;
         solveBtn.textContent = 'Решаем...';
         
+        let solvedBy = 'javascript';
         let solution = null;
         
         try {
             // Пытаемся решить на сервере
             if (useServer) {
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), SERVER_TIMEOUT);
-                    
-                    const response = await fetch(`${SERVER_URL}/solve`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ board: originalBoard }),
-                        signal: controller.signal
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    
-                    if (response.ok) {
-                        const serverResult = await response.json();
-                        if (serverResult && !serverResult.error && serverResult.solved) {
-                            solution = serverResult.board;
-                            console.log('✅ Решено сервером');
-                        }
-                    }
-                } catch (serverError) {
-                    console.warn('⚠️ Сервер недоступен');
+                console.log('🌐 Попытка решения на сервере...');
+                const serverResult = await solveOnServer(originalBoard);
+                
+                if (serverResult && !serverResult.error && serverResult.solved) {
+                    solution = serverResult.board;
+                    solvedBy = serverResult.server || 'python';
+                    console.log(`✅ Сервер решил`);
                 }
             }
             
@@ -637,6 +916,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (clientResult.solved) {
                     solution = clientResult.board;
+                    solvedBy = clientResult.server || 'javascript';
                 } else {
                     showModal(clientResult.message, 'Ошибка');
                     isSolving = false;
@@ -647,7 +927,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Анимируем решение
-            await animateSolution(solution);
+            await animateSolution(solution, solvedBy);
             
         } catch (error) {
             console.error('❌ Ошибка при решении:', error);
@@ -661,7 +941,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Очистка сетки
     function clearGrid() {
-        if (isSolving) return;
+        if (isSolving) {
+            console.log('Идет решение, очистка игнорируется');
+            return;
+        }
         
         isClearing = true;
         
@@ -673,8 +956,15 @@ document.addEventListener('DOMContentLoaded', function() {
             cell.classList.remove('user-input', 'solved', 'active', 'conflict');
         }
         activeCell = null;
+        currentConflicts.clear();
         
-        isClearing = false;
+        // Выбираем первую клетку
+        setTimeout(() => {
+            if (grid.children[0]) {
+                handleCellClick(grid.children[0]);
+            }
+            isClearing = false;
+        }, 50);
     }
 
     // Обработчики событий
