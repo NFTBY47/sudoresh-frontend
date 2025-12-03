@@ -30,11 +30,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Функция проверки необходимости показа клавиатуры
     function shouldShowKeyboard() {
         const width = window.innerWidth;
+        const height = window.innerHeight;
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
-        // Всегда показываем на мобильных устройствах
-        // На десктопах показываем только если окно узкое
-        return isMobile || width <= 1200;
+        // Показываем виртуальную клавиатуру если:
+        // 1. Это мобильное устройство (ширина ≤ 767px)
+        // 2. Ширина окна меньше 1000px
+        // 3. Высота меньше 700px
+        // 4. Это телефон (соотношение сторон)
+        return isMobile || width <= 1000 || height <= 700 || width < height;
     }
 
     // Функция показа/скрытия клавиатуры
@@ -45,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
             virtualKeyboard.classList.add('show');
             keyboardVisible = true;
             
-            // На мобильных устройствах делаем input только для чтения
+            // На мобильных устройствах отключаем фокус на input
             if (window.innerWidth <= 767) {
                 document.querySelectorAll('.cell-input').forEach(input => {
                     input.readOnly = true;
@@ -53,25 +57,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            console.log(`⌨️ Виртуальная клавиатура ВКЛЮЧЕНА (${window.innerWidth}x${window.innerHeight})`);
+            console.log(`⌨️ Виртуальная клавиатура: ВКЛ (${window.innerWidth}x${window.innerHeight})`);
         } else {
             virtualKeyboard.classList.remove('show');
             keyboardVisible = false;
             
-            // Включаем редактирование на десктопах
+            // Включаем фокус обратно на десктопах
             document.querySelectorAll('.cell-input').forEach(input => {
                 input.readOnly = false;
                 input.style.caretColor = '';
             });
             
-            console.log(`⌨️ Виртуальная клавиатура ВЫКЛЮЧЕНА (${window.innerWidth}x${window.innerHeight})`);
+            console.log(`⌨️ Виртуальная клавиатура: ВЫКЛ (${window.innerWidth}x${window.innerHeight})`);
         }
     }
 
     // Создаем виртуальную клавиатуру
     function createVirtualKeyboard() {
         virtualKeyboard.innerHTML = '';
-        virtualKeyboard.className = 'virtual-keyboard';
         
         // Первый ряд: 1-5
         const row1 = document.createElement('div');
@@ -210,7 +213,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 const data = await response.json();
                 console.log('✅ Сервер доступен:', data.server);
-                console.log('📡 Домен:', data.domain);
                 useServer = true;
                 return true;
             }
@@ -225,15 +227,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function initTheme() {
         htmlElement.setAttribute('data-theme', currentTheme);
         localStorage.setItem('theme', currentTheme);
-        
-        const style = document.documentElement.style;
-        if (currentTheme === 'dark') {
-            style.setProperty('--solved-color', '#000000');
-            style.setProperty('--cell-text', '#000000');
-        } else {
-            style.setProperty('--solved-color', '#000000');
-            style.setProperty('--cell-text', '#000000');
-        }
         
         htmlElement.classList.add('theme-transition');
         setTimeout(() => {
